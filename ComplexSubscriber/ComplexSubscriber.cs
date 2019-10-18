@@ -21,33 +21,7 @@ namespace ComplexSubscriber
                     channel.QueueDeclare(CommonConsts.QUEUE_NAME_WORKER, false, false, false);
 
                     var consumer = new EventingBasicConsumer(channel);
-                    consumer.Received += (sender, e) =>
-                    {
-                        var body = e.Body;
-                        var basicProperties = e.BasicProperties;
-                        var replyProperties = channel.CreateBasicProperties();
-                        replyProperties.CorrelationId = basicProperties.CorrelationId;
-
-                        var url = Encoding.UTF8.GetString(body);
-                        Console.WriteLine($"{DateTime.Now}: Processing url {url}. ({basicProperties.CorrelationId})");
-
-                        string content = "";
-
-                        try
-                        {
-                            content = ProcessUrl(url);
-                        }
-                        catch (Exception)
-                        {
-                            Console.WriteLine($"Failed to read {url}.");
-                        }
-                        finally
-                        {
-                            var response = Encoding.UTF8.GetBytes(content);
-                            channel.BasicPublish("", basicProperties.ReplyTo, replyProperties, response);
-                            channel.BasicAck(e.DeliveryTag, false);
-                        }
-                    };
+                    consumer.Received += (sender, e) => Consumer_Received(sender, e, channel);
 
                     channel.BasicConsume(CommonConsts.QUEUE_NAME_WORKER, false, consumer);
 
@@ -57,6 +31,34 @@ namespace ComplexSubscriber
 
             Console.ReadLine();
 
+        }
+
+        private static void Consumer_Received(object sender, BasicDeliverEventArgs e, IModel channel)
+        {
+            var body = e.Body;
+            var basicProperties = e.BasicProperties;
+            var replyProperties = channel.CreateBasicProperties();
+            replyProperties.CorrelationId = basicProperties.CorrelationId;
+
+            var url = Encoding.UTF8.GetString(body);
+            Console.WriteLine($"{DateTime.Now}: Processing url {url}. ({basicProperties.CorrelationId})");
+
+            string content = "";
+
+            try
+            {
+                content = ProcessUrl(url);
+            }
+            catch (Exception)
+            {
+                Console.WriteLine($"Failed to read {url}.");
+            }
+            finally
+            {
+                var response = Encoding.UTF8.GetBytes(content);
+                channel.BasicPublish("", basicProperties.ReplyTo, replyProperties, response);
+                channel.BasicAck(e.DeliveryTag, false);
+            }
         }
 
         private static string ProcessUrl(string url)
