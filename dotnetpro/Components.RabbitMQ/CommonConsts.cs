@@ -6,6 +6,5 @@
         public const string QUEUE_NAME_HELLO_WORLD = "hello";
         public const string QUEUE_NAME_WORKER = "worker";
         public const string URL = "http://www.dotnetpro.de";
-
     }
 }
